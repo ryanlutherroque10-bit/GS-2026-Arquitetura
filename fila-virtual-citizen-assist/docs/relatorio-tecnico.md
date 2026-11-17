@@ -7,7 +7,7 @@
 | Turma | 1CC-FEV |
 | Integrantes | Ryan Luther Roque — RM 572993 · João Guilherme Figueiredo — RM 572697 |
 | Protótipo | Servidor Python + painel web + terminal de atendimento em rede (protótipo principal); terminal Raspberry Pi Pico W no Wokwi (experimento autônomo, sem rede) |
-| Repositório | <https://github.com/ryanlutherroque10-bit/arquitetura-GS2> |
+| Repositório | <https://github.com/ryanlutherroque10-bit/GS-2026-Arquitetura> |
 | Simulação Wokwi | <https://wokwi.com/projects/480879311582717953> — projeto público salvo em 16/11/2026 com o `main.py` e o `diagram.json` deste repositório. Abra o link e clique em ▶. |
 
 ## 1. Problema e objetivo
