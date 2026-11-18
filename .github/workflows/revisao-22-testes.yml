@@ -1,0 +1,21 @@
+name: Revisão Arquitetura 22 testes
+
+on:
+  push:
+    branches: [revisao-arquitetura-22-testes]
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fila-virtual-citizen-assist
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mostrar versão do Python
+        run: python3 --version
+      - name: Executar testes
+        run: python3 -m unittest discover -s tests -v
