@@ -327,8 +327,20 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_body(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"),
                        "application/json; charset=utf-8")
 
+    def content_length(self) -> int:
+        """Tamanho do corpo; um cabeçalho inválido vira erro 400 em vez de derrubar a requisição."""
+        text = (self.headers.get("Content-Length", "0") or "0").strip()
+        if not text.isdecimal():
+            raise QueueError(400, "Cabeçalho Content-Length inválido.")
+        return int(text)
+
+    def token_ok(self) -> bool:
+        """Compara o código do operador em bytes (aceita acentos sem erro e em tempo constante)."""
+        received = self.headers.get("X-Fila-Token", "").encode("latin-1", errors="replace")
+        return hmac.compare_digest(received, TOKEN.encode("utf-8"))
+
     def read_json(self) -> dict:
-        length = int(self.headers.get("Content-Length", "0") or 0)
+        length = self.content_length()
         if length > 4096:
             raise QueueError(413, "Requisição muito grande.")
         if length == 0:
@@ -366,9 +378,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         if path not in ("/api/arrivals", "/api/completions", "/api/reset"):
             self.send_json(404, {"error": "Operação desconhecida."})
             return
-        if TOKEN and not hmac.compare_digest(self.headers.get("X-Fila-Token", ""), TOKEN):
+        if TOKEN and not self.token_ok():
             # Consome o corpo antes de responder, para o cliente receber o 401 por inteiro.
-            self.rfile.read(min(int(self.headers.get("Content-Length", "0") or 0), 4096))
+            try:
+                self.rfile.read(min(self.content_length(), 4096))
+            except QueueError:
+                pass
             self.send_json(401, {"error": "Código do operador ausente ou incorreto."})
             return
         with LOCK:
@@ -378,12 +393,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 payload = self.read_json()
                 source = str(payload.get("source", "painel"))[:20] or "painel"
                 event_id = str(payload.get("event_id", ""))[:64]
-                if event_id:
-                    if event_id in state["seen_event_ids"]:
-                        # Reenvio do mesmo evento: não conta duas vezes.
-                        self.send_json(200, {**get_dashboard(state), "duplicate": True})
-                        return
-                    state["seen_event_ids"] = (state["seen_event_ids"] + [event_id])[-MAX_EVENT_IDS:]
+                if event_id and event_id in state["seen_event_ids"]:
+                    # Reenvio de um evento que JÁ FOI APLICADO: não conta duas vezes.
+                    self.send_json(200, {**get_dashboard(state), "duplicate": True})
+                    return
                 if path == "/api/arrivals":
                     register_arrival(state, source)
                 elif path == "/api/completions":
@@ -397,6 +410,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                     state = empty_state()
                     state["seen_event_ids"] = seen
                     add_event(state, "reinicio", "Demonstração reiniciada.", source=source)
+                # Só guarda o event_id depois que a operação deu certo. Uma operação recusada
+                # (ex.: fila vazia) reenviada continua recusada, em vez de parecer sucesso.
+                if event_id:
+                    state["seen_event_ids"] = (state["seen_event_ids"] + [event_id])[-MAX_EVENT_IDS:]
             except QueueError as error:
                 register_rejection(state, str(error), source)
                 save_state(state)
@@ -413,6 +430,10 @@ def create_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
 
 
 def main() -> None:
+    if TOKEN and not TOKEN.isascii():
+        # Navegadores não enviam cabeçalhos com acento; o painel nunca conseguiria usar esse código.
+        print("FILA_TOKEN deve usar apenas letras sem acento, números e símbolos (ex.: fila-2026).")
+        return
     server = create_server()
     shown_host = "127.0.0.1" if HOST in ("0.0.0.0", "") else HOST
     print(f"Citizen Assist AI disponível em http://{shown_host}:{PORT}")

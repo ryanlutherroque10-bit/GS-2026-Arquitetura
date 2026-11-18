@@ -48,4 +48,4 @@ Deixe o painel e a janela do terminal lado a lado.
 - Memória: o terminal usa 12 KB e deixa 193 KB livres; a fila tem tamanho fixo, então não cresce.
 - Desempenho: "Nos testes encontramos a validação do modelo em O(n²), que levava 278 ms por consulta. Otimizamos para O(n): 0,59 ms."
 - Conectividade: o Pico W do Wokwi não envia eventos ao servidor; essa ligação é só prevista. A comunicação em rede é a do terminal em software e do painel com o servidor, com reenvio sem duplicar eventos.
-- Encerramento: "19 testes automatizados cobrem os quatro cenários do enunciado e as operações inválidas."
+- Encerramento: "22 testes automatizados cobrem os quatro cenários do enunciado e as operações inválidas."

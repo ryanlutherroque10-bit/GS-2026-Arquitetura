@@ -210,7 +210,7 @@ Os limites (`MAX_QUEUE = 200`, `MAX_EVENTS = 250`, `MAX_OBSERVATIONS = 500`) tor
 **Conectividade**
 - **Pico W sem rede.** O firmware não envia eventos ao servidor. Em 12/11/2026 a equipe registrou que, no Wokwi usado no teste, o Pico W associou à rede `Wokwi-GUEST` mas não recebeu IP (`ETIMEDOUT` com IP fixo). Esse comportamento não foi reverificado em 16/11/2026 e pode mudar conforme a versão ou o plano do simulador; por isso a ligação aparece como *prevista*, não como concluída.
 - **Comunicação em rede demonstrada pelo protótipo principal.** O terminal em software e o painel falam com o servidor por HTTP. Falha de envio: o terminal repete o evento com o mesmo `event_id`; o servidor guarda os 200 identificadores mais recentes e não conta o mesmo evento duas vezes. Se as 3 tentativas falharem, o evento não é aplicado e o operador é avisado (não há fila de eventos pendentes offline).
-- **Internet.** O servidor foi preparado para exposição pública: aceita `FILA_HOST=0.0.0.0`, a porta da variável `PORT` e protege as operações de alteração com um código de operador (`FILA_TOKEN`, cabeçalho `X-Fila-Token`); a consulta continua pública. O README traz o passo a passo com túnel HTTPS. **O acesso externo ainda não foi comprovado:** até 16/11/2026 o sistema foi executado apenas em `localhost`; a publicação por túnel ou hospedagem e a verificação a partir de outra rede dependem da equipe (ver seção 7.5).
+- **Internet.** O servidor foi preparado para exposição pública: aceita `FILA_HOST=0.0.0.0`, a porta da variável `PORT` e protege as operações de alteração com um código de operador (`FILA_TOKEN`, cabeçalho `X-Fila-Token`); a consulta continua pública. O README traz o passo a passo com túnel HTTPS. **O acesso externo foi testado em 18/11/2026** por túnel HTTPS, com um celular em dados móveis; o teste e seus limites estão na seção 7.5.
 - O servidor em si fala HTTP sem criptografia; o HTTPS vem do túnel ou da hospedagem. O código de operador é uma proteção simples de demonstração, não um sistema de login.
 - Sem rede, o painel mostra "Sistema desconectado".
 
@@ -218,7 +218,7 @@ Os limites (`MAX_QUEUE = 200`, `MAX_EVENTS = 250`, `MAX_OBSERVATIONS = 500`) tor
 
 ### 7.1 Testes automatizados (servidor)
 
-`python -m unittest discover -s tests -v` sobe o servidor real em uma porta livre e conversa com ele por HTTP. Resultado em 16/11/2026: **19 testes, todos aprovados** (Python 3.14, Windows 11; saída completa em `docs/evidencias/saida-testes.txt`). Os 12 primeiros (`tests/test_fila.py`) já existiam em 12/11/2026; os 7 últimos (`tests/test_integracao.py`) cobrem a comunicação terminal → servidor → painel.
+`python -m unittest discover -s tests -v` sobe o servidor real em uma porta livre e conversa com ele por HTTP. Resultado em 18/11/2026: **22 testes, todos aprovados** (Python 3.14, Windows 11; saída completa em `docs/evidencias/saida-testes.txt`). Os 12 primeiros (`tests/test_fila.py`) já existiam em 12/11/2026; os 7 últimos (`tests/test_integracao.py`) cobrem a comunicação terminal → servidor → painel.
 
 | Teste | Situação do enunciado | Resultado |
 | --- | --- | --- |
@@ -241,6 +241,9 @@ Os limites (`MAX_QUEUE = 200`, `MAX_EVENTS = 250`, `MAX_OBSERVATIONS = 500`) tor
 | `test_servidor_inacessivel_nao_registra_evento` | falha de envio | 3 tentativas sem servidor → erro informado; nada é registrado ✔ |
 | `test_codigo_do_operador_protege_alteracoes` | proteção | com `FILA_TOKEN`, `POST` sem código ou com código errado → 401; consulta pública; código certo → 200 ✔ |
 | `test_reinicio_mantem_protecao_contra_reenvio` | falha de envio | após reiniciar a demonstração, evento antigo reenviado continua descartado ✔ |
+| `test_reenvio_de_operacao_recusada_continua_recusado` | falha de envio | conclusão com fila vazia reenviada com o mesmo `event_id` → 409 de novo (não vira `duplicate`); o `event_id` só é guardado quando a operação dá certo ✔ |
+| `test_content_length_invalido_recebe_400` | operação inválida | `Content-Length` "abc" ou "-5" → HTTP 400, em vez de a requisição ficar sem resposta ✔ |
+| `test_codigo_do_operador_com_acento_nao_derruba_a_requisicao` | proteção | código com acento é comparado em bytes: sem código → 401, código certo → 200 (o servidor também recusa iniciar com `FILA_TOKEN` acentuado, que o navegador não consegue enviar) ✔ |
 
 ### 7.2 Terminal Raspberry Pi Pico W (Wokwi)
 
@@ -291,9 +294,14 @@ Em seguida, `GET /api/state` (o que o painel recebe) devolveu fila 1, concluído
 
 Limite desta evidência: a ação do painel foi enviada por `curl` com o mesmo formato usado por `static/app.js`; a conferência visual no navegador (duas janelas lado a lado) fica para a gravação do vídeo.
 
-### 7.5 Disponibilização pela internet — preparada, ainda não comprovada
+### 7.5 Disponibilização pela internet — testada em 18/11/2026
 
-O enunciado pede que as informações sejam disponibilizadas pela internet. O servidor está pronto para isso (seção 6.5 e README, "Acesso pela internet"), mas até 16/11/2026 só foi executado em `localhost`. Falta a equipe: (1) iniciar o servidor com `FILA_TOKEN`; (2) abrir o túnel HTTPS ou publicar em uma hospedagem; (3) abrir a URL em um aparelho fora da rede local (por exemplo, celular em dados móveis); (4) registrar a URL, a data e o resultado aqui e mostrar no vídeo. Sem esse registro, a comunicação pela internet não deve ser apresentada como demonstrada.
+O enunciado pede que as informações sejam disponibilizadas pela internet. Em 18/11/2026 o servidor foi executado no computador de um integrante com `FILA_TOKEN` definido e publicado por um túnel HTTPS do Cloudflare (`cloudflared tunnel --url http://localhost:8000`, modo gratuito e sem conta).
+
+- **URL gerada:** <https://living-rent-cigarette-couples.trycloudflare.com>. É temporária: só existe enquanto o servidor e o túnel ficam abertos no computador e muda a cada nova execução do túnel; portanto, não deve estar mais acessível quando este relatório for lido.
+- **Aparelho de teste:** celular de um integrante, em **dados móveis** (wifi desligado), ou seja, fora da rede local do servidor.
+- **Resultado:** o painel carregou e exibiu fila, estimativas e atendimentos concluídos. Ao alterar a fila pelo painel no celular, o sistema pediu o código de operador (cabeçalho `X-Fila-Token`); com o código informado, as operações foram aceitas e o painel funcionou. A consulta é pública; apenas as operações que alteram a fila exigem o código.
+- **Limites desta evidência:** o teste foi feito uma vez, em uma operadora e em um aparelho. O tráfego é protegido por HTTPS apenas no trecho do túnel (o servidor fala HTTP puro). Os dados exibidos eram de demonstração. Esta seção não afirma que o serviço permaneça disponível, nem que suportaria muitos acessos simultâneos.
 
 ## 8. Conclusão
 
