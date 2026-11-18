@@ -59,7 +59,7 @@ Teclas: `c` registra uma chegada, `s 7` conclui um atendimento de 7 minutos, `e`
 
 Alternativa: hospedar `app.py` em um serviço que execute Python. O servidor lê a porta da variável `PORT` e deve iniciar com `FILA_HOST=0.0.0.0`. Em hospedagens com disco temporário, a fila é perdida quando o serviço reinicia.
 
-Até 16/11/2026 o sistema foi executado apenas em `localhost`; o acesso externo não foi verificado.
+Em 18/11/2026 o acesso externo foi testado: o servidor foi publicado por um túnel Cloudflare e aberto em um celular com dados móveis (fora da rede local). A URL era temporária. Detalhes e limites do teste em `docs/relatorio-tecnico.md`, seção 7.5.
 
 ### 2. Terminal Raspberry Pi Pico W (Wokwi)
 
@@ -78,7 +78,7 @@ cd fila-virtual-citizen-assist
 python -m unittest discover -s tests -v
 ```
 
-São 19 testes: os quatro cenários mínimos do enunciado, validações, modelo e a comunicação terminal → servidor → painel (reenvio sem duplicar e código do operador). Todos passaram em 16/11/2026; a saída está em [docs/evidencias/](docs/evidencias/).
+São 22 testes: os quatro cenários mínimos do enunciado, validações, modelo e a comunicação terminal → servidor → painel (reenvio sem duplicar, reenvio de operação recusada, cabeçalho inválido e código do operador). Todos passaram em 16/11/2026; a saída está em [docs/evidencias/](docs/evidencias/).
 
 ## Requisitos do enunciado × onde estão atendidos
 
@@ -130,3 +130,4 @@ Os `POST` aceitam `source` (origem do evento) e `event_id` (identificador único
 - O acesso pela internet está preparado (código do operador e instruções de túnel), mas ainda não foi executado nem verificado fora da rede local.
 - O código do operador é uma proteção simples para demonstração; o HTTPS depende do túnel ou da hospedagem.
 - Simulação do Pico W salva no Wokwi: <https://wokwi.com/projects/480879311582717953> (16/11/2026). Ainda não há vídeo de demonstração: é pendência da equipe.
+

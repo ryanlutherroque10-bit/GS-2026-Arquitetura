@@ -2,7 +2,7 @@
 
 Os quatro cenários mínimos do enunciado (seção 6) foram executados em quatro frentes, que não devem ser confundidas:
 
-- **API (testes automatizados)** — reexecutados em 16/11/2026: 19/19 aprovados (`docs/evidencias/saida-testes.txt`).
+- **API (testes automatizados)** — reexecutados em 18/11/2026: 22/22 aprovados (`docs/evidencias/saida-testes.txt`).
 - **Terminal em rede → servidor → painel** — executado em 16/11/2026 (`docs/evidencias/demonstracao-terminal-painel.txt`).
 - **Painel web no navegador** — registro manual da equipe de 12/11/2026 (não repetido em 16/11).
 - **Firmware do Pico W no Wokwi** — registro da equipe de 12/11/2026 (não repetido em 16/11). É um experimento autônomo: sua fila não é a do servidor.
@@ -45,7 +45,9 @@ Para o terminal físico, siga [firmware-pico-w/README.md](../firmware-pico-w/REA
 ## Registro da execução
 
 - **12/11/2026** — Python 3.14.7 no Windows 11; navegador Chromium; Wokwi com Raspberry Pi Pico W e MicroPython v1.28.0. 12/12 testes automatizados aprovados; os quatro cenários reproduzidos manualmente no painel e no Pico W simulado. Registro feito pela equipe (Ryan Luther Roque e João Guilherme Figueiredo); o registro original não identifica qual integrante executou cada passo.
+- **18/11/2026** — Python 3.14 no Windows 11. 22/22 testes automatizados aprovados, incluindo 3 novos (reenvio de operação recusada, Content-Length inválido e código do operador com acento).
 - **16/11/2026** — Python 3.14 no Windows 11. 19/19 testes automatizados aprovados e demonstração terminal → servidor → painel por linha de comando. Execução automatizada feita com apoio de assistente de IA a pedido da equipe; saídas guardadas em `docs/evidencias/`. O painel no navegador e o Wokwi não foram reexecutados nessa data.
 - **16/11/2026 (Wokwi)** — projeto salvo em <https://wokwi.com/projects/480879311582717953>. Com a simulação rodando: conclusão com fila vazia → `rejeitado`; três chegadas → `pessoa=1`, `2`, `3`; conclusão → `pessoa=1;duracao=7.0`, display "Atendido #1". Potenciômetro e LEDs não foram conferidos nesta execução.
 - **A fazer pela equipe:** conferir os resultados, repetir os quatro cenários no navegador durante a gravação e registrar o teste de acesso pela internet.
 - **Observação:** os 60 registros iniciais (`data/historico_simulado.csv`) são **simulados** e identificados como tal.
+

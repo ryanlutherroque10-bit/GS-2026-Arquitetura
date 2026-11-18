@@ -113,6 +113,43 @@ class IntegracaoTest(unittest.TestCase):
         self.assertEqual(self.painel()["queue_count"], 0)
 
     # ------------------------------------------------------- proteção das alterações
+    def test_reenvio_de_operacao_recusada_continua_recusado(self) -> None:
+        # Fila vazia: a conclusão é recusada. Se a resposta se perder e o mesmo evento for
+        # reenviado, ele deve ser recusado de novo, e não parecer um sucesso duplicado.
+        corpo = {"duration_minutes": 5, "event_id": "evento-recusado"}
+        self.assertEqual(self.post("/api/completions", corpo)[0], 409)
+        status, dados = self.post("/api/completions", corpo)
+        self.assertEqual(status, 409)
+        self.assertNotIn("duplicate", dados)
+        self.assertEqual(self.painel()["completed_count"], 0)
+        # Depois que há alguém na fila, o mesmo evento passa a valer uma única vez.
+        self.post("/api/arrivals", {"event_id": "chegada-1"})
+        self.assertEqual(self.post("/api/completions", corpo)[0], 200)
+        self.assertTrue(self.post("/api/completions", corpo)[1].get("duplicate"))
+        self.assertEqual(self.painel()["completed_count"], 1)
+
+    def test_content_length_invalido_recebe_400(self) -> None:
+        import http.client
+        porta = self.server.server_address[1]
+        for valor in ("abc", "-5"):
+            conexao = http.client.HTTPConnection("127.0.0.1", porta, timeout=5)
+            conexao.putrequest("POST", "/api/arrivals")
+            conexao.putheader("Content-Type", "application/json")
+            conexao.putheader("Content-Length", valor)
+            conexao.endheaders()
+            resposta = conexao.getresponse()
+            self.assertEqual(resposta.status, 400, valor)
+            self.assertIn("Content-Length", json.loads(resposta.read())["error"])
+            conexao.close()
+        self.assertEqual(self.painel()["queue_count"], 0)
+
+    def test_codigo_do_operador_com_acento_nao_derruba_a_requisicao(self) -> None:
+        with mock.patch.object(app, "TOKEN", "ação-123"):
+            self.assertEqual(self.post("/api/arrivals", {})[0], 401)
+            bruto = "ação-123".encode("utf-8").decode("latin-1")  # como um cliente UTF-8 envia
+            self.assertEqual(self.post("/api/arrivals", {}, {"X-Fila-Token": bruto})[0], 200)
+        self.assertEqual(self.painel()["queue_count"], 1)
+
     def test_codigo_do_operador_protege_alteracoes(self) -> None:
         with mock.patch.object(app, "TOKEN", "segredo-da-demo"):
             self.assertTrue(self.painel()["write_protected"])  # consulta continua pública
@@ -133,3 +170,4 @@ class IntegracaoTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
